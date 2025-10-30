@@ -75,27 +75,51 @@ This project, built on the KubeEdge-Ianvs open platform, targets single-task lea
       Result Output:
 
       Compute and report SR (%) with sample size N; produce a minimal report (SR value + simple plot) for baseline comparison.
-3. Action-Based Data Ratio Strategy
+3. Data Ratio Strategy and Sampling
 
-    In RLDS streaming data, invalid or low-value samples (e.g., near-zero actions, outliers, or irrelevant subsets) dilute gradients and increase training instability. To improve data efficiency and convergence, lightweight deterministic filtering should be applied before batch formation.
+    **Objective**
 
-   **Objective**
+      Systematically investigate the impact of data mixing ratios between different dataset subsets on VLA model performance. This involves developing strategies to combine multiple data sources (e.g., different LIBERO task families, or simulated vs real-world data) in varying proportions to identify optimal blending recipes that maximize model generalization and task-specific performance.
 
-    This project improves training data quality through sample filtering and data ratio strategies. It removes near-zero action samples that cause ineffective updates, filters corrupted data with NaN/Inf or abnormal magnitudes, and applies dataset-level selection to focus on high-value subsets. These measures increase gradient density, reduce noise, and accelerate convergence for better model performance.
+
    **Task：** 
+      
+      - Cross-Subset Mixing Strategies
 
-      This task focuses on improving the quality and effectiveness of training data in RLDS streams through a unified action-based filtering strategy. The core objectives are to increase the ratio of valid samples, reduce training noise, and enable targeted dataset-level selection.
+        Implement flexible data loading mechanisms to support configurable mixing of multiple dataset subsets:
+        
+        Multi-Source Data Loader: Develop data loaders capable of simultaneous sampling from multiple dataset subsets (e.g., LIBERO_SPATIAL, LIBERO_OBJECT, LIBERO_GOAL) with precise ratio control.
 
-      - Sample-level action filtering:
+        This task focuses on improving the quality and effectiveness of training data in RLDS streams through a unified action-based filtering strategy. The core objectives are to increase the ratio of valid samples, reduce training noise, and enable targeted dataset-level selection.
 
-        Remove low-value samples by applying an action strength threshold, where the maximum frame-wise L2 norm within a window is used as the metric.
+        Ratio Configuration System: Support expressive ratio configurations through configuration files
+        ```
+        data_mixing_ratios:
+          libero_spatial: 2
+          libero_object: 1
+        ```
+        This example implements a 2:1 mixing ratio across two subsets.
 
-        Prioritize pose dimensions (first 6 DOF) to avoid misclassifying valid samples with only gripper motion as near-zero actions.
+        Weighted Sampling Mechanism: Implement sampling algorithms that maintain specified proportions throughout training by adjusting sampling probabilities based on target ratios and dataset sizes.
 
-        Perform numerical health checks, discarding any sample containing NaN/Inf values or exceeding predefined absolute magnitude limits.
+      - Systematic Ratio Exploration
 
-      - Dataset-level filtering:
-        Implement whitelist/blacklist mechanisms based on dataset_name to focus training on high-value subsets while excluding irrelevant or noisy datasets.
+        Design comprehensive experiments to explore the performance landscape across different mixing ratios:
+
+        Binary Ratio Matrix: Test a systematic progression of ratios between two key subsets:
+
+        ```
+          Ratio Grid: 1:0, 3:1, 2:1, 1:1, 1:2, 1:3, 0:1
+          (Subset_A : Subset_B)
+        ```
+
+        Controlled Experiment Setup: For each ratio configuration, maintain consistent total training steps and computational budget to ensure fair comparisons across conditions.
+
+      - Task-Conditioned Ratio Optimization
+
+        This task focuses on understanding how optimal data mixing ratios correlate with specific task requirements and dataset characteristics. We will conduct task-dependent ratio analysis to determine if different task categories (e.g., manipulation vs. navigation tasks) benefit from distinct mixing strategies. Furthermore, we will perform dataset characteristic correlation studies to analyze how subset properties—including size, task diversity, demonstration quality, and scenario coverage—influence the effectiveness of various ratio combinations. Based on these empirical findings, we will develop practical heuristic rules that provide guidelines for ratio selection tailored to specific dataset metadata and target task profiles.
+
+      - 
 
 4. Systematic Evaluation and Benchmark Report 
 
@@ -136,15 +160,11 @@ cloud_VLA_finetune
     ├── benchmarkingjob.yaml
     └── testalgorithms
     │   └── vla_dataselect
-            ├── vla_component ── ……
     │       ├── basemodel.py
     │       ├── generation.py
     |       ├── finetuning.py
     |       ├── vla_algorithm.yaml
     └── testenv
-            ├── test_data.json
-            ├── test_data.txt
-            ├── test_data.jsonl
             ├── acc.py
             └── testenv.yaml 
 ```
